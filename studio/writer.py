@@ -247,7 +247,7 @@ For every shot give id, picture, action, camera and line_en.
   for every cast character in it, at most two characters, no crowds. line_en = "".
 - Describe place, time of day and light every time, consistently. No text, no logos, no musical instruments floating
   in the air. Camera: e.g. "slow push-in", "slow orbit around her", "low angle tracking him dancing"."""
-    out = ollama([{"role": "user", "content": user}], SHOTS_SCHEMA, temperature=0.7, think="low")
+    out = ollama([{"role": "user", "content": user}], SHOTS_SCHEMA, temperature=0.7, think="low", timeout=900)
     names = {store.tag(c["name"]).lower(): store.tag(c["name"]) for c in chars}
     for s in out.get("shots", []):
         for k in ("picture", "action", "camera"):

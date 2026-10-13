@@ -52,6 +52,10 @@ SING = (" The characters shown in <Picture 1> come alive and perform exactly as 
 DANCE = (" Everything shown in <Picture 1> comes alive and moves exactly as described, in time with the rhythm of the "
          "music, like a professional music video. Nobody speaks or sings in this shot, all mouths stay closed.{keep}"
          "\n\noverall_soundscape: The music of the song continues: {genre}. No speech.\n\nnon_diegetic_music: {genre}")
+# sung close-ups the shot plan did not describe get one of these, in turn
+SING_POSES = ["singing with emotion", "singing with a big happy smile", "singing with eyes closed, feeling the music",
+              "singing and clapping", "singing with one hand raised high", "singing with a hand on the heart",
+              "singing and swaying to the beat", "singing straight to the viewer"]
 
 
 def audio_seconds(path):
@@ -185,11 +189,25 @@ def step_plan(prod):
     prod.status(stage="plan", label=f"Planning {n} shots (local AI)")
     stop_comfy(CFG["comfy_url"])
     chars = prod.chars()
-    try:
-        planned = writer.plan_music_shots(p, chars, shots, style_text(m))
-    except Exception as e:  # the video still gets made: simple shots from templates
-        prod.log(f"shot planning by AI failed ({str(e)[:150]}) - simple shots used")
-        planned = []
+    sing_list, story_list = m.get("sing_shots") or [], m.get("story_shots") or []
+    if sing_list or story_list:  # a hand-written storyboard: no AI needed, used in order (and again if too short)
+        planned, ns, na = [], 0, 0
+        for sh in shots:
+            src = (sing_list[ns % len(sing_list)] if sh["sung"] and sing_list else
+                   story_list[na % len(story_list)] if story_list else {})
+            if sh["sung"] and sing_list:
+                ns += 1
+            elif story_list:
+                na += 1
+            src = {"picture": src} if isinstance(src, str) else dict(src)
+            planned.append({"id": sh["id"], **src})
+        prod.log(f"hand-written storyboard used ({len(sing_list)} singing, {len(story_list)} story shots)")
+    else:
+        try:
+            planned = writer.plan_music_shots(p, chars, shots, style_text(m))
+        except Exception as e:  # the video still gets made: simple shots from templates
+            prod.log(f"shot planning by AI failed ({str(e)[:150]}) - simple shots used")
+            planned = []
     by_id = {s.get("id"): s for s in planned if isinstance(s, dict)}
     singer = next((c for c in chars if c["id"] in (m.get("singers") or [])), chars[0] if chars else None)
     stag = store.tag(singer["name"]) if singer else ""
@@ -200,7 +218,12 @@ def step_plan(prod):
         sing = bool(sh["sung"]) and bool(singer)
         picture = (got.get("picture") or "").strip()
         if sing and (not picture or "close-up" not in picture.lower()):
-            picture = f"tight head-and-shoulders close-up of {stag}, face filling the frame, singing with emotion, {place}"
+            # lip sync needs a close-up: keep the planned moment, only change the framing (and vary the pose, or
+            # every sung shot comes out the same picture)
+            moment = re.sub(r"^(an? )?((extreme|very) )?((wide|medium|full|long|establishing|low[- ]angle|high[- ]angle) )?"
+                            r"(shot|view) of ", "", picture, flags=re.I) if picture else place
+            picture = (f"tight head-and-shoulders close-up of {stag}, face filling the frame, "
+                       f"{SING_POSES[k % len(SING_POSES)]}, {moment}")
         if not picture:
             picture = (f"wide shot of {stag} dancing joyfully in {place}" if singer and k % 2 else
                        f"cinematic wide shot of {place}, beautiful light, gentle movement")

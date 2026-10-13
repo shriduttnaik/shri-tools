@@ -68,6 +68,8 @@ Each of these came from a broken clip:
     smart memory, two clips in a row peaked at 39.9 GB of a 42.7 GB commit limit.
 12. **In cartoon styles, objects grow faces** (a ball with eyes, a paper boat with a mouth). Pictures without
     characters get "objects are ordinary objects with no faces or eyes".
+13. **Frozen splashes become objects.** A still picture of raindrops splashing turned one frozen splash into a
+    twig standing next to the object. For close-ups of objects in rain write "rain ripples on the puddle".
 
 ## The quality gate
 

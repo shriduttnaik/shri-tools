@@ -140,7 +140,8 @@ def only_stock(h):
     rest = " ".join(h)
     for phrase in sorted(STOCK, key=len, reverse=True):
         rest = re.sub(rf"\b{re.escape(phrase)}\b", " ", rest)
-    return not rest.split()
+    # glue words between stock phrases ("thank you for watching AND i'll see you in the next video")
+    return not [w for w in rest.split() if w not in ("and", "so", "the", "a", "um", "uh", "okay", "ok")]
 
 
 results = {}
