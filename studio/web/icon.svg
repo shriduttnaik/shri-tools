@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="SHRI TOOLS">
+  <title>SHRI TOOLS</title>
+  <defs>
+    <linearGradient id="saffron" x1="0" y1="0" x2="1" y2="0.4">
+      <stop offset="0" stop-color="#FF5A00"/>
+      <stop offset="0.55" stop-color="#FF7A10"/>
+      <stop offset="1" stop-color="#FF9A2E"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="244" height="244" rx="54" fill="#000" stroke="#39FF88" stroke-width="8"/>
+  <!-- waving saffron flag on its pole -->
+  <path fill="url(#saffron)" d="M62 46 C104 34,134 70,182 60 L204 74 C182 81,166 86,158 93 C178 103,200 110,218 126 C180 128,132 118,86 128 Z">
+    <animate attributeName="d" dur="2.4s" repeatCount="indefinite" calcMode="spline"
+      keyTimes="0;0.5;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"
+      values="M62 46 C104 34,134 70,182 60 L204 74 C182 81,166 86,158 93 C178 103,200 110,218 126 C180 128,132 118,86 128 Z;
+              M62 46 C98 58,138 50,182 72 L206 86 C184 90,168 93,160 101 C182 110,202 117,216 136 C178 134,128 138,86 128 Z;
+              M62 46 C104 34,134 70,182 60 L204 74 C182 81,166 86,158 93 C178 103,200 110,218 126 C180 128,132 118,86 128 Z"/>
+  </path>
+  <line x1="58" y1="38" x2="104" y2="222" stroke="#FF7A10" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="58" cy="36" r="7" fill="#FF9A2E"/>
+  <!-- S for SHRI -->
+  <text x="92" y="218" font-family="'Segoe UI Black','Arial Black','Segoe UI',Arial,sans-serif" font-weight="900"
+        font-size="150" textLength="104" lengthAdjust="spacingAndGlyphs" fill="#FFFFFF">S</text>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "comfy_url": "http://127.0.0.1:8188",
+  "comfy_dir": "C:\\AI\\ComfyUI_windows_portable",
+  "comfy_python": "C:\\AI\\ComfyUI_windows_portable\\python_embeded\\python.exe",
+  "comfy_flags": "--disable-smart-memory --cache-none",
+  "ffmpeg": "C:\\AI\\ffmpeg\\bin\\ffmpeg.exe",
+  "music_python": "",
+  "audiocraft_cache": ""
+}

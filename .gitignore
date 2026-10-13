@@ -1,0 +1,13 @@
+# your own settings and work (never published)
+config.json
+library/
+output/
+logs/
+setup/setup_report.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# example clips that are not approved for publishing yet
+docs/media/private/

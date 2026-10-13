@@ -1,0 +1,446 @@
+{
+  "name": "Shri Tools Connect - make a video",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Shri Tools Connect\n1. Start **Shri Tools** (desktop shortcut). In Shri Tools > **Connect** you can set an API key (optional on this laptop) and download this workflow with your key already filled in.\n2. Edit **Your video** (title, idea, season, language) and click **Test workflow**, or call the webhook **POST /webhook/shritub-connect** with the same fields as JSON.\n3. Shri Tools writes the story, draws the pictures, makes every scene with MiniMax H3 (voices + sounds), checks them, joins the final video and makes a Short, thumbnails and YouTube texts. This flow checks every 10 minutes (one scene takes ~10 min on a 4 GB GPU, an 18-scene episode ~4 h).\n4. **Download final video** gives the mp4 as binary: connect **YouTube > Upload** after it. Titles, description and tags are in `video.publish` of the last check.\n\nFields: title, idea (or scenes), season (title) or season_id, language (en, hi, kn, kok, mr, ta, te, ml, bn, gu, pa, ur), style (pixar, cinematic, anime, storybook, clay), cast (names), scenes_wanted, approve_pictures (true = stop after the pictures until you press Make videos), callback_url.",
+        "height": 540,
+        "width": 580
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000001",
+      "name": "How to use",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        -640
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000002",
+      "name": "Start (manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000031",
+              "name": "title",
+              "value": "Say Thank You, Tuntun!",
+              "type": "string"
+            },
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000032",
+              "name": "idea",
+              "value": "Tuntun meets the vegetable seller and learns to say thank you.",
+              "type": "string"
+            },
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000033",
+              "name": "season",
+              "value": "Shri Mama and Tuntun",
+              "type": "string"
+            },
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000034",
+              "name": "language",
+              "value": "en",
+              "type": "string"
+            },
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000035",
+              "name": "scenes_wanted",
+              "value": 18,
+              "type": "number"
+            },
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000036",
+              "name": "approve_pictures",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000003",
+      "name": "Your video",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shritub-connect",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000004",
+      "name": "Webhook (from other flows)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        220
+      ],
+      "webhookId": "7b1c0e10-2a3d-4e5f-9a00-000000000040"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000051",
+              "name": "base_url",
+              "value": "http://127.0.0.1:7880",
+              "type": "string"
+            },
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000052",
+              "name": "api_key",
+              "value": "PUT-YOUR-API-KEY-HERE-OR-LEAVE-EMPTY",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000005",
+      "name": "Shri Tools settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fields come from 'Your video' (manual) or from the webhook body\nconst keys = ['title', 'idea', 'prompt', 'scenes', 'season', 'season_id', 'language', 'style', 'cast',\n  'scenes_wanted', 'approve_pictures', 'music', 'hook_text', 'callback_url'];\nreturn $input.all().map((item) => {\n  const src = item.json.body ?? item.json;\n  const payload = {};\n  for (const k of keys) if (src[k] !== undefined && src[k] !== '') payload[k] = src[k];\n  if (!payload.idea && !payload.prompt && !payload.scenes) throw new Error('Send an idea or scenes');\n  const key = item.json.api_key === 'PUT-YOUR-API-KEY-HERE-OR-LEAVE-EMPTY' ? '' : (item.json.api_key || '');\n  return { json: { payload, base_url: item.json.base_url, api_key: key } };\n});"
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000006",
+      "name": "Make request body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base_url }}/api/connect/videos",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000007",
+      "name": "Start video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "minutes"
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000008",
+      "name": "Wait 10 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        840,
+        100
+      ],
+      "webhookId": "7b1c0e10-2a3d-4e5f-9a00-000000000080"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Start video').first().json.video.status_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('Make request body').first().json.api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000009",
+      "name": "Check video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000101",
+              "leftValue": "={{ $json.video.state }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000010",
+      "name": "Done?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "7b1c0e10-2a3d-4e5f-9a00-000000000111",
+              "leftValue": "={{ ['failed', 'cancelled'].includes($json.video.state) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000011",
+      "name": "Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ 'Shri Tools: ' + $json.video.title + ' ' + $json.video.state + ': ' + ($json.video.error || 'see the Build tab in Shri Tools') }}"
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000012",
+      "name": "Stop: video failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video.files.final }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('Make request body').first().json.api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "7b1c0e10-2a3d-4e5f-9a00-000000000013",
+      "name": "Download final video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Start (manual)": {
+      "main": [
+        [
+          {
+            "node": "Your video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Your video": {
+      "main": [
+        [
+          {
+            "node": "Shri Tools settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook (from other flows)": {
+      "main": [
+        [
+          {
+            "node": "Shri Tools settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shri Tools settings": {
+      "main": [
+        [
+          {
+            "node": "Make request body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make request body": {
+      "main": [
+        [
+          {
+            "node": "Start video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start video": {
+      "main": [
+        [
+          {
+            "node": "Wait 10 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 10 min": {
+      "main": [
+        [
+          {
+            "node": "Check video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check video": {
+      "main": [
+        [
+          {
+            "node": "Done?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Done?": {
+      "main": [
+        [
+          {
+            "node": "Download final video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failed?": {
+      "main": [
+        [
+          {
+            "node": "Stop: video failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 10 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,51 @@
+diff --git a/loader.py b/loader.py
+index 7cefb11..7a327b2 100644
+--- a/loader.py
++++ b/loader.py
+@@ -99,10 +99,15 @@ def gguf_sd_loader(path, handle_prefix="model.diffusion_model.", is_text_model=F
+         compat = "sd.cpp" if arch_str is None else arch_str
+         # import here to avoid changes to convert.py breaking regular models
+         from .tools.convert import detect_arch
++        keys = set(val[0] for val in tensors)
+         try:
+-            arch_str = detect_arch(set(val[0] for val in tensors)).arch
++            arch_str = detect_arch(keys).arch
+         except Exception as e:
+-            raise ValueError(f"This model is not currently supported - ({e})")
++            # MiniMax H3 (incl. AdaLN curve-table GGUFs from sd.cpp/unsloth): ComfyUI core detects it from the keys
++            if {"video_patch_proj.weight", "audio_patch_proj.weight"} <= keys:
++                arch_str = "minimax_h3"
++            else:
++                raise ValueError(f"This model is not currently supported - ({e})")
+     elif arch_str not in TXT_ARCH_LIST and is_text_model:
+         if type_str not in VIS_TYPE_LIST:
+             raise ValueError(f"Unexpected text model architecture type in GGUF file: {arch_str!r}")
+diff --git a/ops.py b/ops.py
+index 88a352e..a476f84 100644
+--- a/ops.py
++++ b/ops.py
+@@ -6,7 +6,7 @@ import logging
+ import comfy.ops
+ import comfy.lora
+ import comfy.model_management
+-from .dequant import dequantize_tensor, is_quantized
++from .dequant import dequantize_tensor, dequantize, is_quantized
+ 
+ def chained_hasattr(obj, chained_attr):
+     probe = obj
+@@ -251,6 +251,15 @@ class GGMLOps(comfy.ops.manual_cast):
+     class Embedding(GGMLLayer, comfy.ops.manual_cast.Embedding):
+         def forward_ggml_cast_weights(self, input, out_dtype=None):
+             output_dtype = out_dtype
++            w = self.weight
++            if is_quantized(w) and not getattr(w, "patches", []) and self.max_norm is None:
++                # dequantize only the looked-up rows: the full table of a large vocab
++                # (e.g. Qwen3-VL-32B, ~3 GB in fp32) does not fit on small GPUs
++                ids = input.reshape(-1).to(w.device)
++                rows = torch.Tensor(w)[ids]
++                out = dequantize(rows, w.tensor_type, (ids.numel(), w.tensor_shape[-1]), dtype=self.dequant_dtype if self.dequant_dtype not in (None, "target") else None)
++                out = out.to(device=input.device, dtype=out_dtype or torch.float32)
++                return out.reshape(*input.shape, -1).to(dtype=output_dtype)
+             if self.weight.dtype == torch.float16 or self.weight.dtype == torch.bfloat16:
+                 out_dtype = None
+             weight, _bias = self.cast_bias_weight(self, device=input.device, dtype=out_dtype)
