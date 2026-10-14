@@ -96,13 +96,15 @@ walks into an empty shot. With videos made automatically (n8n, schedules) nobody
   a picture that says "nobody / empty" -> the picture is drawn again (Settings `picture_check_tries`, default 2).
   Crowds are allowed when the picture text asks for them (families, villagers, people in the background) and not
   limited by "only these two people" / "exactly three people and nobody else". Statues, idols and posters do not count.
-- **After the videos**, at a frame 0.6 s before the end of every clip (episodes and music videos): an extra or
-  doubled person fails the clip and the check round makes it again.
+- **After the videos**, it counts the people at the start of every clip and 0.6 s before its end (episodes and
+  music videos): more people at the end means someone walked into the shot, and the clip is made again. It compares
+  the clip with its own start, not with the cast list - a festival crowd that is already in the picture stays in the
+  video, and that is fine (an earlier version compared with the cast list and failed 11 good clips of a garba night).
 
 The local model is `qwen2.5vl:7b` in Ollama (Settings `vision_model`), about 1 minute per picture on a 4 GB GPU. It
 counts people well but misses subtle action differences (a handshake instead of a wrist grab); with a Claude, OpenAI
 or Gemini key in Settings the cloud model is used instead. Tested on 9 known good/bad pictures: 8 right, no good
-picture failed. Turn it off with Settings `picture_check: false`.
+picture failed; the clip check on 3 known clips: 3 right. Turn it off with Settings `picture_check: false`.
 
 ## Timings on the test laptop (RTX 3050 4 GB, 24 GB RAM)
 

@@ -66,8 +66,9 @@ def _jpeg_b64(path, side=768):
     return base64.b64encode(buf.getvalue()).decode()
 
 
-def ask_vision(path, text, st=None, cpu_only=False, timeout=600):
+def ask_vision(path, text, st=None, cpu_only=False, timeout=600, schema=None):
     st = st or store.settings()
+    schema = schema or SCHEMA
     provider = st.get("llm_provider") or "ollama"
     img = _jpeg_b64(path)
     if provider == "claude" and st.get("anthropic_api_key"):
@@ -75,14 +76,14 @@ def ask_vision(path, text, st=None, cpu_only=False, timeout=600):
         msgs = [{"role": "user", "content": [
             {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": img}},
             {"type": "text", "text": text}]}]
-        return llm.ask("claude", msgs, SCHEMA, st, timeout=timeout)
+        return llm.ask("claude", msgs, schema, st, timeout=timeout)
     if provider in ("openai", "compat") and (st.get("openai_api_key") or st.get("compat_api_key")):
         import llm
         msgs = [{"role": "user", "content": [
             {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + img}},
             {"type": "text", "text": text}]}]
-        return llm.ask(provider, msgs, SCHEMA, st, timeout=timeout)
-    body = {"model": st.get("vision_model") or "qwen2.5vl:7b", "stream": False, "format": SCHEMA, "keep_alive": "5m",
+        return llm.ask(provider, msgs, schema, st, timeout=timeout)
+    body = {"model": st.get("vision_model") or "qwen2.5vl:7b", "stream": False, "format": schema, "keep_alive": "5m",
             "messages": [{"role": "user", "content": text, "images": [img]}],
             "options": {"temperature": 0, "num_ctx": 8192, **({"num_gpu": 0} if cpu_only else {})}}
     req = urllib.request.Request(st["ollama_url"] + "/api/chat", data=json.dumps(body).encode(),
@@ -124,20 +125,34 @@ def verdict(ans, scene, chars):
     return not reasons, reasons
 
 
-def people_verdict(ans, scene, chars):
-    """For a frame of a finished clip: only who is there counts (the action is half-way, a face may be turned)."""
+COUNT = ("Count EVERY person in this picture: adults, children, babies and cartoon characters, also people who are small, "
+         "far away in the background or partly hidden (statues, idols, paintings, posters and dolls are NOT people). "
+         "Answer in JSON with people_count and people (one short line per person).")
+COUNT_SCHEMA = {"type": "object", "properties": {"people_count": {"type": "integer"},
+                                                 "people": {"type": "array", "items": {"type": "string"}}},
+                "required": ["people_count", "people"]}
+
+
+def count_people(path, st=None):
+    return int(ask_vision(path, COUNT, st=st, schema=COUNT_SCHEMA).get("people_count") or 0)
+
+
+def check_clip(first, last, scene, chars, st=None):
+    """Did someone walk INTO the shot? The end of the clip is compared with its start (the picture), not with the cast
+    list: a picture with a festival crowd behind the cast is right, and the crowd is still there at the end (this
+    mistake once failed 11 good Navratri clips). A picture that already has more people than its @Names (background
+    people) is left to the picture check - crowds cannot be counted reliably."""
     want, crowd = expected(scene, chars)
-    reasons = []
-    n = int(ans.get("people_count") or 0)
-    if not crowd and want and n > len(want):
-        reasons.append(f"a person appeared in the video ({n} people, {len(want)} wanted)")
-    return not reasons, reasons
-
-
-def check_frame(path, scene, chars, look, st=None):
-    ans = ask_vision(path, prompt_for(scene, chars, look), st=st)
-    ok, reasons = people_verdict(ans, scene, chars)
-    return {"ok": ok, "reasons": reasons, "answer": ans}
+    if crowd:
+        return {"ok": True, "reasons": [], "start": None, "end": None}
+    n0 = count_people(first, st)
+    if n0 > len(want) + 1:
+        return {"ok": True, "reasons": [], "start": n0, "end": None}
+    n1 = count_people(last, st)
+    if n1 > max(n0, len(want)):
+        return {"ok": False, "reasons": [f"a person appeared in the video ({n0} at the start, {n1} at the end)"],
+                "start": n0, "end": n1}
+    return {"ok": True, "reasons": [], "start": n0, "end": n1}
 
 
 def check(path, scene, chars, look, st=None, cpu_only=False):

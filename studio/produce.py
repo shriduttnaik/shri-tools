@@ -526,8 +526,9 @@ class Producer:
         return res
 
     def look_at_clips(self, res):
-        """H3 sometimes lets a person walk into a shot whose picture was right: the vision AI looks at a frame near
-        the end of every clip; an extra or doubled person fails the clip, so the check round makes it again."""
+        """H3 sometimes lets a person walk into a shot whose picture was right: the vision AI counts the people at the
+        start and near the end of every clip; more people at the end fails the clip, so the check round makes it
+        again (background crowds that were already in the picture are fine)."""
         import picqc
         chars = self.chars()
         stop_comfy(CFG["comfy_url"])  # the vision model needs the GPU
@@ -539,19 +540,24 @@ class Producer:
                 if not s:
                     continue
                 self.status(stage="check", label=f"Looking at videos {n}/{len(res)}")
-                frame = os.path.join(self.dir, "versions", f"_look_{sid}.jpg")
-                run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-sseof", "-0.6", "-i",
-                     self.path("clips", sid + ".mp4"), "-frames:v", "1", "-q:v", "3", frame])
-                if not os.path.exists(frame):
+                clip = self.path("clips", sid + ".mp4")
+                first = os.path.join(self.dir, "versions", f"_look_{sid}_a.jpg")
+                last = os.path.join(self.dir, "versions", f"_look_{sid}_b.jpg")
+                run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-ss", "0.1", "-i", clip, "-frames:v", "1",
+                     "-q:v", "3", first])
+                run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-sseof", "-0.6", "-i", clip, "-frames:v", "1",
+                     "-q:v", "3", last])
+                if not (os.path.exists(first) and os.path.exists(last)):
                     continue
                 try:
-                    look = picqc.check_frame(frame, s, chars, self.look, st=self.st)
+                    look = picqc.check_clip(first, last, s, chars, st=self.st)
                 except Exception as e:
                     self.log(f"looking at the videos not possible ({str(e)[:150]})")
                     return
                 finally:
-                    if os.path.exists(frame):
-                        os.remove(frame)
+                    for f in (first, last):
+                        if os.path.exists(f):
+                            os.remove(f)
                 if not look["ok"]:
                     v["ok"] = False
                     v["problems"] = list(v.get("problems") or []) + look["reasons"]
