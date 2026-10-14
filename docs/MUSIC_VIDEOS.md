@@ -5,9 +5,11 @@
 1. **Song**: [MiniMax Music 3](https://huggingface.co/MiniMaxAI/MiniMax-Music3) makes a complete song (vocals and
    instruments, 32 kHz stereo; the model can do 5 minutes, Shri Tools offers up to 3) from **lyrics** and a **music description**. Leave the lyrics
    empty and the story AI writes them in the language you chose, with `[Verse]`, `[Chorus]`, `[Instrumental]` tags.
-2. **Plan**: Whisper listens to the song and finds where words are sung. The song is cut into shots of exactly 124
-   frames (5.17 s). Sung parts become close-ups of your singer, music-only parts become story or dance shots. The
-   story AI writes each shot's picture.
+2. **Plan**: Whisper listens to the song word by word, and the words it hears are matched to **your lyrics** (Whisper
+   misspells sung words and sometimes loops on a held note, so its own text is never used when lyrics exist). Every
+   lyric line gets its time in the song. The song is cut into shots of exactly 124 frames (5.17 s): a shot with sung
+   words becomes a close-up of your singer with exactly those lyric words, music-only parts become story or dance
+   shots. The story AI writes each shot's picture, or you write the storyboard yourself (see below).
 3. **Pictures**: FLUX.2 klein draws every shot with your singer's character pictures as reference. With *Let me check
    the pictures* on, it stops here: fix any picture, then press *Pictures OK - make videos*.
 4. **Clips**: every shot is a MiniMax H3 clip that gets **its own 5.17 s piece of the song as the audio guide**, so
@@ -64,5 +66,16 @@ full [license](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE
 
 - In music videos the sound comes from the song, not from H3: H3 only uses its piece of the song as a guide for the
   lips and the movement. (In story episodes all voices are H3's own.)
+- A story shot can play while the song is sung (the song plays under every shot), so a good music video mixes the
+  singer's close-ups with story shots. If nearly the whole song is sung, change some *Sing* shots to *Action* in the
+  storyboard; a close-up on a music-only part should say "mouth closed", or the lips move with no voice.
+- Your own storyboard: put `sing_shots` (close-ups) and `story_shots` lists of `{picture, action, camera}` in the
+  project's `music` settings (API: `PATCH /api/projects/{id}`) and plan again; they are used in order, no AI needed.
+- Subtitles (`.srt`) are your lyric lines at the times they are sung.
+- Male and female voices: MiniMax Music sometimes sings the chorus with a woman's voice even in a song for a male
+  singer (or the other way round). The plan measures the voice's pitch in every sung shot (a man around 85-200 Hz, a
+  woman around 180-400 Hz) and gives that shot to a cast member of that voice: put both singers in the cast (or pick
+  *Duet*), or a man would lip-sync a woman's voice. Children's and choir songs are not checked (a child's voice is
+  high for boys and girls alike).
 - Via the API: `POST /api/connect/videos` with `"kind": "music"`, `idea` or `lyrics`, `language`, `genre`, `vocal`,
   `style`, `singers` (names), `seconds` (see [CONNECT_API.md](CONNECT_API.md)).

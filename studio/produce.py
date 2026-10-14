@@ -370,6 +370,64 @@ class Producer:
             store.set_result(self.pid, s["id"], picture_v=int(time.time()), picture_prompt=prompt, picture_seed=seed,
                              clip_outdated=os.path.exists(self.path("clips", s["id"] + ".mp4")))
             self.log(f"{s['id']} picture ({len(refs)} character refs) {time.time() - t0:.0f} s")
+        if self.st.get("picture_check", True) and todo:
+            self.check_pictures(todo, chars)
+
+    def check_pictures(self, todo, chars):
+        """A vision AI looks at every new picture; a doubled or extra person, a missing character or a different
+        action -> the picture is drawn again with a new seed (picture_check_tries times). The best try stays."""
+        import picqc
+        tries = int(self.st.get("picture_check_tries", 2))
+        best = {}  # scene id -> (number of problems, file in versions)
+        todo = list(todo)
+        for r in range(tries + 1):
+            stop_comfy(CFG["comfy_url"])  # the vision model needs the GPU
+            self.comfy_used_for = None
+            bad = []
+            for n, s in enumerate(todo, 1):
+                self.status(stage="pictures", label=f"Checking pictures {n}/{len(todo)} (round {r + 1})",
+                            done=n - 1, total=len(todo))
+                out = self.path("pictures", s["id"] + ".png")
+                try:
+                    res = picqc.check(out, s, chars, self.look, st=self.st)
+                except Exception as e:  # no vision model: the pictures stay as they are
+                    picqc.unload(self.st)
+                    self.log(f"picture check not possible ({str(e)[:150]}) - pictures not checked")
+                    return
+                store.set_result(self.pid, s["id"], picture_check=res["reasons"] or "ok")
+                if res["ok"]:
+                    continue
+                self.log(f"  {s['id']} picture: {'; '.join(res['reasons'])}")
+                keep = self.path("versions", f"{s['id']}_picture_try{r + 1}_{int(time.time())}.png")
+                shutil.copy(out, keep)
+                if s["id"] not in best or len(res["reasons"]) < best[s["id"]][0]:
+                    best[s["id"]] = (len(res["reasons"]), keep)
+                bad.append(s)
+            picqc.unload(self.st)  # Klein (redraw) or H3 (videos) come next and need the GPU
+            self.log(f"picture check round {r + 1}: {len(todo) - len(bad)} OK" +
+                     (f", draw again {', '.join(s['id'] for s in bad)}" if bad and r < tries else ""))
+            if not bad:
+                return
+            if r == tries:
+                for s in bad:  # still not right: keep the try with the fewest problems, and say so
+                    shutil.copy(best[s["id"]][1], self.path("pictures", s["id"] + ".png"))
+                    self.log(f"  {s['id']}: kept the best try - please look at this picture")
+                return
+            w, h = self.st["picture_size"]
+            for s in bad:
+                out = self.path("pictures", s["id"] + ".png")
+                prompt, refs = self.picture_prompt(s, chars)
+                names = [self.to_input(f, f"stb_{self.pid[:15]}_{s['id']}_ref{i}{os.path.splitext(f)[1]}")
+                         for i, f in enumerate(refs)]
+                seed = seed_for(self.pid, s["id"], "pic", time.time())
+                self.status(stage="pictures", label=f"Drawing {s['id']} again (round {r + 1})")
+                if not self.comfy(self.klein_graph(prompt, names, w, h, seed, f"shritub/{self.pid[:15]}_{s['id']}"),
+                                  out[:-4], "klein"):
+                    raise RuntimeError(f"{s['id']}: no picture (ComfyUI kept crashing)")
+                store.set_result(self.pid, s["id"], picture_v=int(time.time()), picture_prompt=prompt,
+                                 picture_seed=seed)
+                self.log(f"  {s['id']} drawn again")
+            todo = bad
 
     # ---------- H3 clips ----------
     def h3_prompt(self, s, chars):
@@ -462,11 +520,47 @@ class Producer:
                 env=dict(os.environ, HF_HUB_OFFLINE="1"))
         if not os.path.exists(out):
             raise RuntimeError("the check failed: " + (r.stderr or r.stdout)[-800:])
-        return store.read_json(out, {})
+        res = store.read_json(out, {})
+        if self.st.get("picture_check", True):
+            self.look_at_clips(res)
+        return res
+
+    def look_at_clips(self, res):
+        """H3 sometimes lets a person walk into a shot whose picture was right: the vision AI looks at a frame near
+        the end of every clip; an extra or doubled person fails the clip, so the check round makes it again."""
+        import picqc
+        chars = self.chars()
+        stop_comfy(CFG["comfy_url"])  # the vision model needs the GPU
+        self.comfy_used_for = None
+        by_id = {s["id"]: s for s in self.p["scenes"]}
+        try:
+            for n, (sid, v) in enumerate(sorted(res.items()), 1):
+                s = by_id.get(sid)
+                if not s:
+                    continue
+                self.status(stage="check", label=f"Looking at videos {n}/{len(res)}")
+                frame = os.path.join(self.dir, "versions", f"_look_{sid}.jpg")
+                run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-sseof", "-0.6", "-i",
+                     self.path("clips", sid + ".mp4"), "-frames:v", "1", "-q:v", "3", frame])
+                if not os.path.exists(frame):
+                    continue
+                try:
+                    look = picqc.check_frame(frame, s, chars, self.look, st=self.st)
+                except Exception as e:
+                    self.log(f"looking at the videos not possible ({str(e)[:150]})")
+                    return
+                finally:
+                    if os.path.exists(frame):
+                        os.remove(frame)
+                if not look["ok"]:
+                    v["ok"] = False
+                    v["problems"] = list(v.get("problems") or []) + look["reasons"]
+        finally:
+            picqc.unload(self.st)
 
     def step_check(self):
-        if self.p.get("kind") == "music":  # the song is the sound: nothing for the speech check to judge
-            return
+        if self.p.get("kind") == "music":  # the song is the sound: only who appears in the clips is checked
+            return self.check_music_clips()
         have = [s["id"] for s in self.p["scenes"] if os.path.exists(self.path("clips", s["id"] + ".mp4"))]
         ids = self.task.get("scenes") or have
         ids = [i for i in ids if i in have]
@@ -504,6 +598,39 @@ class Producer:
                 self.log(f"{sid}: keeps its better try ({'OK' if best[1]['ok'] else ', '.join(best[1]['problems'])})")
             store.set_result(self.pid, sid, qc=best[1], clip_v=int(time.time()))
 
+    def check_music_clips(self):
+        """Music video clips: the vision AI looks at the end of each clip (a person who walked in, a doubled
+        character); a bad clip is made once more, and the better of the two stays."""
+        if not self.st.get("picture_check", True):
+            return
+        have = [s["id"] for s in self.p["scenes"] if os.path.exists(self.path("clips", s["id"] + ".mp4"))]
+        ids = [i for i in (self.task.get("scenes") or have) if i in have]
+        if not ids:
+            return
+        res = {sid: {"ok": True, "problems": [], "heard": "", "rms": 1.0} for sid in ids}
+        self.look_at_clips(res)
+        bad = sorted(s for s, v in res.items() if not v["ok"])
+        self.log(f"looked at {len(ids)} videos: {len(ids) - len(bad)} OK" + (f", remake {', '.join(bad)}" if bad else ""))
+        if not bad:
+            return
+        chars = self.chars()
+        for sid in bad:
+            self.log(f"  {sid}: {', '.join(res[sid]['problems'])}")
+            first = self.path("versions", f"{sid}_look1_{int(time.time())}.mp4")
+            shutil.copy(self.path("clips", sid + ".mp4"), first)
+            s = next(x for x in self.p["scenes"] if x["id"] == sid)
+            self.status(stage="check", label=f"Remaking {sid}")
+            seed = seed_for(self.pid, sid, "clip", "look", time.time())
+            self.make_clip(s, chars, seed)
+            store.set_result(self.pid, sid, clip_v=int(time.time()), clip_seed=seed)
+        again = {sid: {"ok": True, "problems": [], "heard": "", "rms": 1.0} for sid in bad}
+        self.look_at_clips(again)
+        for sid in bad:
+            if again[sid]["ok"]:
+                self.log(f"  {sid}: new clip OK")
+            else:
+                self.log(f"  {sid}: still {', '.join(again[sid]['problems'])} - kept the new clip, please look")
+
     # ---------- final video ----------
     def clip_list(self, ids=None):
         return [self.path("clips", s["id"] + ".mp4") for s in self.p["scenes"]
@@ -521,16 +648,16 @@ class Producer:
                ["--xfade", str(self.st["xfade"]), "--level", str(self.st["level"])]
         opt = self.p.get("options", {})
         if opt.get("music"):
-            music = self.path("output", "music.wav")
-            if not os.path.exists(music):
+            bgm = self.path("output", "music.wav")  # not "music": that name is the music video module
+            if not os.path.exists(bgm):
                 self.status(stage="final", label="Making background music")
                 stop_comfy(CFG["comfy_url"])
                 prompt = opt.get("music_prompt") or "gentle cinematic background score, soft, warm"
-                r = run([CFG["music_python"], os.path.join(ENGINE, "music.py"), music, prompt,
+                r = run([CFG["music_python"], os.path.join(ENGINE, "music.py"), bgm, prompt,
                          f"{len(clips) * 5:.0f}"])
-                self.log("music: " + ("ready" if os.path.exists(music) else "failed " + (r.stderr or r.stdout)[-300:]))
-            if os.path.exists(music):
-                args += ["--music", music, "--music-volume", str(self.st["music_volume"])]
+                self.log("music: " + ("ready" if os.path.exists(bgm) else "failed " + (r.stderr or r.stdout)[-300:]))
+            if os.path.exists(bgm):
+                args += ["--music", bgm, "--music-volume", str(self.st["music_volume"])]
         if os.path.exists(final):
             shutil.copy(final, self.path("versions", f"final_{int(time.time())}.mp4"))
         r = run(args)
@@ -855,9 +982,51 @@ while(s>24&&(t.getBoundingClientRect().height>{h}||t.scrollWidth>{w})){{s-=4;b.s
         secs = self.make_short(ids, self.p.get("hook_text") or pub.get("short_title") or self.p["title"],
                                self.path("output", "short1.mp4"))
         pub["short"] = {"file": "output/short1.mp4", "scenes": ids, "seconds": secs}
+        self.log(f"Short: {len(ids)} scenes, {secs} s")
+        # more Shorts from the same video: the ending (payoff / moral) and the best middle moment
+        shorts = [dict(pub["short"], title=self.p.get("hook_text") or pub.get("short_title") or self.p["title"])]
+        for n, (kind, sids) in enumerate(self.more_shorts(items, ids)[:max(0, int(self.st.get("shorts_count", 3)) - 1)],
+                                         2):
+            lines_in = [s["line"] for s in self.p["scenes"] if s["id"] in sids and s["kind"] == "talk" and s.get("line")]
+            title = (self.p["title"] if kind == "story" else lines_in[-1] if lines_in else
+                     (pub.get("titles") or [self.p["title"]])[min(n - 1, len(pub.get("titles") or [1]) - 1)])
+            self.status(stage="publish", label=f"Making Short {n} (9:16)")
+            try:
+                secs = self.make_short(sids, title, self.path("output", f"short{n}.mp4"))
+            except Exception as e:
+                self.log(f"Short {n} failed ({str(e)[:150]})")
+                continue
+            shorts.append({"file": f"output/short{n}.mp4", "scenes": sids, "seconds": secs, "title": title,
+                           "kind": kind})
+            self.log(f"Short {n} ({kind}): {len(sids)} scenes, {secs} s")
+        pub["shorts"] = shorts
         pub["made"] = store.now()
         store.write_json(store.pfile(self.pid, "publish.json"), pub)
-        self.log(f"Short: {len(ids)} scenes, {secs} s")
+
+    def more_shorts(self, items, first):
+        """Scene lists for extra Shorts. The first Short is the hook + the climax; these add "story" (the opening and
+        set-up, ~45 s, if it is not mostly the first Short's scenes) and "moment" (the 3 scenes around the strongest
+        spoken line in the second half, ~15 s - a punchy Reel)."""
+        xf = self.st["xfade"]
+        plans = []
+        story, t = [], 0.0
+        for it in items:
+            if t + it[3] - xf > min(45, self.st["short_max_seconds"]):
+                break
+            story.append(it[0]["id"])
+            t += it[3] - xf
+        if len(story) >= 4 and len(set(story) & set(first)) < 0.7 * len(story):
+            plans.append(("story", story))
+        half = len(items) // 2
+        best, best_key = [], (-1, -1)
+        for i in range(half, max(half + 1, len(items) - 2)):
+            win = items[i:i + 3]
+            key = (sum(1 for it in win if it[0]["kind"] == "talk"), i)  # later wins a tie: the payoff
+            if len(win) == 3 and key > best_key:
+                best, best_key = [it[0]["id"] for it in win], key
+        if best and best != story[-3:]:
+            plans.append(("moment", best))
+        return plans
 
     # ---------- run ----------
     def step_translate(self):

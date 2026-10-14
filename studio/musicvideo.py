@@ -10,6 +10,7 @@ Called from produce.Producer (kind == "music"). Named musicvideo.py so it never 
 """
 import json, math, os, re, shutil, time
 
+import lyrics
 import store
 
 H3_FRAMES, FPS = 124, 24
@@ -137,7 +138,10 @@ def step_song(prod):
 
 # ---------- plan ----------
 def sung_words(prod, song, lang_code):
-    """[(start, end, text)] of the sung lines (Whisper small with timestamps, in the song's language)."""
+    """[(start, end, word)] of the sung words (Whisper small with word timestamps, in the song's language).
+    The song is heard one shot-long piece at a time: on a whole song Whisper loses its place on repeated lines and loops
+    ("तालिया तालिया तालिया ...", words with zero length), on 5-second pieces it almost never does. A word heard more
+    than 3 times in a row is still dropped."""
     import av
     import numpy as np
     from transformers import pipeline
@@ -148,19 +152,66 @@ def sung_words(prod, song, lang_code):
     whisper = store.LANGUAGES[lang_code]["whisper"]
     for name in ("openai/whisper-small", "openai/whisper-base"):
         try:
-            asr = pipeline("automatic-speech-recognition", model=name, device=-1, chunk_length_s=30)
+            asr = pipeline("automatic-speech-recognition", model=name, device=-1)
             break
         except Exception:
             continue
-    out = asr({"raw": a, "sampling_rate": 16000}, return_timestamps=True,
-              generate_kwargs={"language": whisper, "task": "transcribe"})
-    rows = []
-    for ch in out.get("chunks", []):
-        s, e = ch.get("timestamp") or (None, None)
-        if s is None:
-            continue
-        rows.append((float(s), float(e if e is not None else s + 3), (ch.get("text") or "").strip()))
+    rows, step = [], int(SHOT * 16000)
+    for k in range(0, len(a), step):
+        piece = a[k:k + step]
+        if len(piece) < 8000:  # under half a second
+            break
+        out = asr({"raw": piece, "sampling_rate": 16000}, return_timestamps="word",
+                  generate_kwargs={"language": whisper, "task": "transcribe", "no_repeat_ngram_size": 3})
+        t0, t1 = k / 16000, (k + len(piece)) / 16000
+        for ch in out.get("chunks", []):
+            s, e = ch.get("timestamp") or (None, None)
+            w = (ch.get("text") or "").strip()
+            if s is None or not w:
+                continue
+            if len(rows) >= 3 and all(r[2] == w for r in rows[-3:]):
+                continue
+            rows.append((t0 + float(s), min(t1, t0 + float(e if e is not None else s + 0.4)), w))
     return rows
+
+
+def shot_voices(song, shots):
+    """For each sung shot "female" / "male" (or None): the singing voice's pitch (YIN, 75-450 Hz). A man sings around
+    85-200 Hz, a woman around 180-400 Hz. Instruments blur it, so only strongly periodic frames count. MiniMax Music
+    sometimes gives the chorus to a woman although the song is for a male singer - then that shot needs a woman."""
+    import av
+    import numpy as np
+    c = av.open(song)
+    res = av.AudioResampler(format="flt", layout="mono", rate=16000)
+    a = np.concatenate([r.to_ndarray().reshape(-1) for f in c.decode(audio=0) for r in res.resample(f)]).astype(np.float32)
+    c.close()
+    sr, n, hop = 16000, 1024, 512
+    tmin, tmax = sr // 450, sr // 75
+    w = n - tmax
+    out = {}
+    for sh in shots:
+        if not sh["sung"]:
+            continue
+        seg = a[int(sh["start"] * sr):int(sh["end"] * sr)]
+        if len(seg) < n * 2:
+            continue
+        fr = np.lib.stride_tricks.sliding_window_view(seg, n)[::hop]
+        fr = fr - fr.mean(axis=1, keepdims=True)
+        fr = fr[np.sqrt((fr ** 2).mean(axis=1)) > 0.01]
+        if len(fr) < 8:
+            continue
+        d = np.stack([((fr[:, :w] - fr[:, t:t + w]) ** 2).sum(axis=1) for t in range(1, tmax + 1)], axis=1)
+        cm = d * np.arange(1, tmax + 1) / np.maximum(np.cumsum(d, axis=1), 1e-9)
+        lag = tmin + np.argmin(cm[:, tmin - 1:tmax], axis=1)
+        ok = cm[np.arange(len(cm)), lag - 1] < 0.25
+        hz = sr / lag[ok]
+        if len(hz) >= 8:
+            out[sh["id"]] = "female" if (hz > 200).mean() > 0.5 and np.median(hz) > 190 else "male"
+    return out
+
+
+def gender(c):
+    return {"she": "female", "he": "male"}.get((c or {}).get("pronoun"))
 
 
 def step_plan(prod):
@@ -174,14 +225,37 @@ def step_plan(prod):
     secs = audio_seconds(song)
     n = max(1, math.ceil(secs / SHOT - 0.15))  # the last bit shorter than ~0.8 s is dropped
     prod.status(stage="plan", label="Finding where the singing is")
-    words = sung_words(prod, song, store.language(p)) if m.get("vocal") != "none" else []
+    heard = sung_words(prod, song, store.language(p)) if m.get("vocal") != "none" else []
+    # the real lyrics on the timeline (Whisper's own spelling only when there are no lyrics or nothing matched)
+    times, rows, lwords = lyrics.align(m.get("lyrics"), heard)
+    if rows:
+        prod.log(f"lyrics found in the song: {len(rows)} lines, {len(times)} words")
+    else:
+        rows = [{"start": s, "end": e, "text": w} for s, e, w in heard]
     shots = []
     for i in range(n):
         a, b = i * SHOT, min(secs, (i + 1) * SHOT)
-        text = " ".join(t for s, e, t in words if min(b, e) - max(a, s) > 0.6)
-        shots.append({"id": f"s{i + 1:03d}", "start": round(a, 2), "end": round(b, 2), "sung": text})
-    store.write_json(prod.path("", "song_words.json"), [{"start": s, "end": e, "text": t} for s, e, t in words])
-    if p.get("scenes"):  # a new plan: the old pictures and videos no longer fit, keep them in versions        stamp = int(time.time())
+        got = (lyrics.sung_between(times, lwords, a, b) if times else
+               [w for s, e, w in heard if a - 0.15 <= (s + e) / 2 < b])
+        # a shot with less than 2 sung words is an instrumental part: a story / dance shot, mouths closed
+        shots.append({"id": f"s{i + 1:03d}", "start": round(a, 2), "end": round(b, 2),
+                      "sung": " ".join(got) if len(got) >= 2 else ""})
+    store.write_json(prod.path("", "song_words.json"), rows)
+    # a song sung from start to end would be all close-ups of one face: when more than half the shots are sung, every
+    # second shot of a sung run becomes a story shot (the song plays on under it, so it stays in sync)
+    if sum(1 for sh in shots if sh["sung"]) > len(shots) / 2:
+        run = 0
+        for sh in shots:
+            run = run + 1 if sh["sung"] else 0
+            if run and run % 2 == 0:
+                sh["sung"] = ""
+        prod.log(f"mostly sung: {sum(1 for sh in shots if sh['sung'])} close-ups kept, story shots in between")
+    # who really sings each shot (adult voices only: a child's voice is high whether boy or girl)
+    voices = shot_voices(song, shots) if m.get("vocal") in ("male", "female", "duet") else {}
+    if voices:
+        prod.log("voices: " + ", ".join(f"{k} {v}" for k, v in sorted(voices.items())))
+    if p.get("scenes"):  # a new plan: the old pictures and videos no longer fit, keep them in versions
+        stamp = int(time.time())
         for sub in ("pictures", "clips"):
             for f in os.listdir(prod.path(sub, "")):
                 if f.endswith((".png", ".mp4")):
@@ -212,17 +286,31 @@ def step_plan(prod):
     singer = next((c for c in chars if c["id"] in (m.get("singers") or [])), chars[0] if chars else None)
     stag = store.tag(singer["name"]) if singer else ""
     place = m.get("setting") or "a colorful stage with warm lights"
+    singers = [c for c in chars if c["id"] in (m.get("singers") or [])]
     scenes = []
     for k, sh in enumerate(shots):
         got = by_id.get(sh["id"], {})
         sing = bool(sh["sung"]) and bool(singer)
         picture = (got.get("picture") or "").strip()
+        who, wtag = singer, stag
+        voice = voices.get(sh["id"])
+        if sing and voice and gender(singer) and gender(singer) != voice:
+            # a woman sings this part but the singer is a man (or the other way round): someone of that voice sings it
+            alt = (next((c for c in singers if gender(c) == voice), None) or
+                   next((c for c in chars if gender(c) == voice), None))
+            if alt:
+                who, wtag = alt, store.tag(alt["name"])
+                picture = picture.replace(stag, wtag)
+                if wtag not in picture:
+                    picture = ""
+            else:
+                prod.log(f"{sh['id']}: a {voice} voice sings here but the cast has no {voice} character")
         if sing and (not picture or "close-up" not in picture.lower()):
             # lip sync needs a close-up: keep the planned moment, only change the framing (and vary the pose, or
             # every sung shot comes out the same picture)
             moment = re.sub(r"^(an? )?((extreme|very) )?((wide|medium|full|long|establishing|low[- ]angle|high[- ]angle) )?"
                             r"(shot|view) of ", "", picture, flags=re.I) if picture else place
-            picture = (f"tight head-and-shoulders close-up of {stag}, face filling the frame, "
+            picture = (f"tight head-and-shoulders close-up of {wtag}, face filling the frame, "
                        f"{SING_POSES[k % len(SING_POSES)]}, {moment}")
         if not picture:
             picture = (f"wide shot of {stag} dancing joyfully in {place}" if singer and k % 2 else
@@ -230,7 +318,7 @@ def step_plan(prod):
         scenes.append({
             "id": sh["id"], "kind": "sing" if sing else "action", "picture": picture,
             "action": (got.get("action") or ("sings with real feeling" if sing else "moves with the rhythm")).strip(),
-            "speaker": singer["name"] if sing else "", "line": sh["sung"], "line_en": (got.get("line_en") or "").strip(),
+            "speaker": who["name"] if sing else "", "line": sh["sung"], "line_en": (got.get("line_en") or "").strip(),
             "tone": "sings", "sounds": "", "camera": (got.get("camera") or "slow push-in").strip(),
             "start": sh["start"], "end": sh["end"]})
     p = prod.reload()
@@ -263,6 +351,9 @@ def h3_music_prompt(prod, s, chars):
     genre = style_text(m).split(",")[0]
     lang = store.LANGUAGES[store.language(p, s)]["h3"]
     vocal = VOCALS.get(m.get("vocal") or "female", "")
+    singer = next((c for c in chars if c["name"] == s.get("speaker")), None)
+    if singer and m.get("vocal") in ("male", "female", "duet"):  # the voice of whoever sings THIS shot (duets)
+        vocal = VOCALS["female" if singer.get("pronoun") == "she" else "male"]
     if s["kind"] == "sing" and s.get("line"):
         name = s.get("speaker") or "The singer"
         desc = (f"{picture}. {who} {name} {action}, singing: <d>[{lang}] {s['line']}</d> Camera: {camera}.")
@@ -354,12 +445,12 @@ def step_music_publish(prod):
         raise RuntimeError("make the final video first")
     chars = prod.chars()
     pub = store.publish(prod.pid)
-    lyrics = [l for l in (p.get("music", {}).get("lyrics") or "").splitlines() if l.strip() and not l.startswith("[")]
+    song_lines = [l for l in (p.get("music", {}).get("lyrics") or "").splitlines() if l.strip() and not l.startswith("[")]
     if not pub.get("titles") or prod.task.get("texts"):
         prod.status(stage="publish", label="Writing titles, description and tags (local AI)")
         stop_comfy(CFG["comfy_url"])
         try:
-            pub.update(writer.publish_texts(p, chars, lyrics[:16]))
+            pub.update(writer.publish_texts(p, chars, song_lines[:16]))
         except Exception as e:
             prod.log(f"AI texts failed ({str(e)[:200]}) - simple texts used")
             pub.update(titles=[p["title"]], description=(p.get("logline") or p.get("idea", "")) + "\n\n" +
@@ -397,17 +488,54 @@ def step_music_publish(prod):
     words = store.read_json(prod.path("", "song_words.json"), []) or []
     if words and seconds(final) > off + length + 5:  # start a little before the first sung line
         start = off + max(0.0, min(words[0]["start"] - 1.0, seconds(final) - off - length))
-    short = prod.path("output", "short1.mp4")
     fc = ("[0:v]split[a][b];[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=40,"
           "eq=brightness=-0.22[bg];[b]crop=ih*4/5:ih,scale=1080:1350[fg];[bg][fg]overlay=0:300[v0];[v0][1:v]overlay=0:0[v]")
-    r = run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{start:.2f}", "-t", f"{length:.2f}", "-i", final,
-             "-i", os.path.join(work, "title.png"), "-filter_complex", fc, "-map", "[v]", "-map", "0:a",
-             "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
-             "-movflags", "+faststart", short])
-    if r.returncode == 0 and os.path.exists(short):
-        pub["short"] = {"file": "output/short1.mp4", "scenes": [], "seconds": round(seconds(short), 1)}
-        prod.log(f"Short: {seconds(short):.1f} s from {start:.1f} s")
-    else:
-        prod.log("Short failed: " + (r.stderr or "")[-300:])
+
+    def cut(n, a, secs, title_png):
+        out = prod.path("output", f"short{n}.mp4")
+        r = run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{a:.2f}", "-t", f"{secs:.2f}", "-i", final,
+                 "-i", title_png, "-filter_complex", fc, "-map", "[v]", "-map", "0:a",
+                 "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac",
+                 "-b:a", "160k", "-movflags", "+faststart", out])
+        if r.returncode == 0 and os.path.exists(out):
+            return round(seconds(out), 1)
+        prod.log(f"Short {n} failed: " + (r.stderr or "")[-300:])
+        return None
+
+    shorts = []
+    secs = cut(1, start, length, os.path.join(work, "title.png"))
+    if secs:
+        pub["short"] = {"file": "output/short1.mp4", "scenes": [], "seconds": secs}
+        shorts.append(dict(pub["short"], title=p.get("hook_text") or p["title"]))
+        prod.log(f"Short: {secs:.1f} s from {start:.1f} s")
+    # more Shorts: the chorus (the most repeated lyric line = the hook) and the ending, ~30 s each
+    total = seconds(final)
+    more = []
+    if words and total - off > 60:
+        norm = lambda t: re.sub(r"[^\w]+", " ", t).strip().lower()
+        counts = {}
+        for w in words:
+            counts[norm(w["text"])] = counts.get(norm(w["text"]), 0) + 1
+        # the chorus: the first line under a [Chorus] tag in the lyrics, else the line sung most often
+        lyr = (p.get("music", {}).get("lyrics") or "").splitlines()
+        first_chorus = next((norm(lyr[i + 1]) for i, l in enumerate(lyr[:-1])
+                             if re.fullmatch(r"\s*\[\s*chorus[^\]]*\]\s*", l, re.I) and lyr[i + 1].strip()), None)
+        hook = (next((w for w in words if norm(w["text"]) == first_chorus), None) if first_chorus else None) or \
+            max(words, key=lambda w: (counts[norm(w["text"])], -w["start"]))
+        a = off + max(0.0, min(hook["start"] - 1.0, total - off - 30))
+        if abs(a - start) > 8:
+            more.append(("chorus", a, hook["text"]))
+        more.append(("ending", max(off, total - 30), p["title"]))
+    for n, (kind, a, title) in enumerate(more[:max(0, int(prod.st.get("shorts_count", 3)) - 1)], 2):
+        png = os.path.join(work, f"title{n}.png")
+        im = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
+        prod.glow_text(im, re.sub(r"[()]", "", title).upper(), (60, 70, 960, 230), 92, "impact", "center")
+        im.save(png)
+        prod.status(stage="publish", label=f"Making Short {n} (9:16)")
+        secs = cut(n, a, min(30, total - a), png)
+        if secs:
+            shorts.append({"file": f"output/short{n}.mp4", "scenes": [], "seconds": secs, "title": title, "kind": kind})
+            prod.log(f"Short {n} ({kind}): {secs:.1f} s from {a:.1f} s")
+    pub["shorts"] = shorts
     pub["made"] = store.now()
     store.write_json(store.pfile(prod.pid, "publish.json"), pub)

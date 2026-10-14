@@ -159,6 +159,9 @@ def main():
         have = [m["name"] for m in tags.get("models", [])]
         say("OK" if model in have else "MISS", f"Ollama model {model}", "ready" if model in have else
             f"run: ollama pull {model}")
+        vision = st.get("vision_model", "qwen2.5vl:7b")
+        say("OK" if vision in have else "WARN", f"Ollama vision model {vision} (picture + video check)",
+            "ready" if vision in have else f"run: ollama pull {vision} (without it nothing is checked)")
 
     # text drawing for Indian languages
     fonts = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")

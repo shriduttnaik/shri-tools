@@ -962,6 +962,16 @@ function tabShorts(P) {
   };
   drawList();
   const has = d.outputs["short1.mp4"];
+  const more = (pub.shorts || []).slice(1).filter((s) => s.file && d.outputs[s.file.replace("output/", "")]);
+  const moreCard = more.length ? h("div", { class: "card", style: { marginTop: "16px" } }, h("h3", {}, "More Shorts from this video"),
+    h("div", { class: "hint", style: { marginTop: 0, marginBottom: "10px" } }, "Made with the YouTube kit: the opening story, the strongest moment (or a song's chorus and ending)."),
+    h("div", { style: { display: "flex", gap: "16px", flexWrap: "wrap" } }, ...more.map((s) => {
+      const f = s.file.replace("output/", ""), n = (f.match(/\d+/) || ["2"])[0];
+      return h("div", { style: { width: "200px" } },
+        h("div", { class: "player v" }, h("video", { src: lib(`${base}/${s.file}?v=${d.outputs[f]}`), controls: true, preload: "metadata" })),
+        h("div", { style: { margin: "6px 0" } }, h("b", {}, s.title || p.title), h("div", { class: "dim" }, `${s.kind || "Short"} · ${s.seconds || "?"} s`)),
+        h("a", { class: "btn", href: `/download/${base}/${s.file}?name=${encodeURIComponent(`${p.title} - Short ${n}.mp4`)}` }, icon("down"), "Download"));
+    }))) : null;
   return h("div", { class: "split" },
     h("div", { style: { display: "flex", gap: "20px", flexWrap: "wrap", alignItems: "flex-start" } },
       has ? h("div", { class: "player v" }, h("video", { src: lib(`${base}/output/short1.mp4?v=${has}`), controls: true, preload: "metadata" }))
@@ -972,7 +982,8 @@ function tabShorts(P) {
           field("Short description", h("textarea", { rows: 3, value: pub.short_description || "", onchange: async (e) => { await safe(() => api(`/projects/${P.id}/publish`, "PATCH", { short_description: e.target.value }), "Saved"); } })),
           h("div", { class: "btns" },
             has ? h("a", { class: "btn primary", href: `/download/${base}/output/short1.mp4?name=${encodeURIComponent(p.title)} - Short.mp4` }, icon("down"), "Download") : null,
-            h("button", { onclick: () => copy(`${pub.short_title || p.title}\n\n${pub.short_description || ""}\n\n${(pub.hashtags || []).join(" ")} #shorts`, "Short text copied") }, icon("copy"), "Copy text"))))),
+            h("button", { onclick: () => copy(`${pub.short_title || p.title}\n\n${pub.short_description || ""}\n\n${(pub.hashtags || []).join(" ")} #shorts`, "Short text copied") }, icon("copy"), "Copy text")))),
+      moreCard),
     h("div", { class: "card" }, h("h3", {}, "Scenes in the Short"), h("div", { class: "hint", style: { marginTop: 0, marginBottom: "8px" } }, "Lines get big captions. Under 60 s."), total, list,
       h("div", { class: "btns", style: { marginTop: "14px" } },
         h("button", { class: "primary", disabled: !sel.size || !d.outputs["final.mp4"] || ["running", "waiting"].includes(d.status.state), onclick: () =>

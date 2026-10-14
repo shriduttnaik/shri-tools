@@ -34,6 +34,7 @@ CJK = re.compile(r"[　-〿぀-ヿ㐀-鿿가-힯฀-๿]")  # Chinese, Japanese,
 HAN = re.compile(r"[　-〿぀-ヿ㐀-鿿가-힯]")  # Chinese, Japanese, Korean
 INDIC = re.compile(r"[؀-ۿऀ-ॿ]")  # Urdu / Hindi script
 LATIN = re.compile(r"[A-Za-z]{2,}")
+URL = re.compile(r"www\.|\.(com|org|net)\b", re.I)  # Whisper's noise hallucination ("www.beadaholique.com to ...")
 
 
 def foreign_words(ml):
@@ -198,7 +199,7 @@ for name in sorted(os.listdir(clip_dir)):
             problems.append(f"line not clear ({match:.0%} of its words heard)")
         if len(h) > len(e) + 5:
             problems.append("extra talking")
-    elif len(h) > 3 and len(set(h)) > 2 and not only_stock(h):
+    elif len(h) > 3 and len(set(h)) > 2 and not only_stock(h) and not URL.search(heard):
         problems.append("invented talking")
     results[sid] = {"ok": not problems, "problems": problems, "heard": heard, "multilingual": ml,
                     "rms": round(rms, 4), "line": line, "match": round(match, 3) if line else None}

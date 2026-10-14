@@ -101,7 +101,8 @@ def project_view(p):
         files[s["id"]] = {"picture": mtime(os.path.join(d, "pictures", s["id"] + ".png")),
                           "clip": mtime(os.path.join(d, "clips", s["id"] + ".mp4"))}
     out = {}
-    for f in ["final.mp4", "short1.mp4", "subtitles.srt", "thumb1.jpg", "thumb2.jpg", "thumb3.jpg", "song.wav"]:
+    for f in ["final.mp4", "short1.mp4", "short2.mp4", "short3.mp4", "subtitles.srt", "thumb1.jpg", "thumb2.jpg", "thumb3.jpg",
+              "song.wav"]:
         out[f] = mtime(os.path.join(d, "output", f))
     q = [t for t in store.queue() if t.get("project") == p["id"] and t["state"] in ("waiting", "running")]
     chars = [character_view(c) for c in (store.load("character", cid) for cid in p.get("cast", [])) if c]

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 430" role="img" aria-label="SHRI TOOLS - offline AI video studio">
+  <title>SHRI TOOLS</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A0D12"/>
+      <stop offset="0.55" stop-color="#0E1611"/>
+      <stop offset="1" stop-color="#0A0D12"/>
+    </linearGradient>
+    <radialGradient id="glowL" cx="0.18" cy="0.35" r="0.45">
+      <stop offset="0" stop-color="#FF7A10" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FF7A10" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowR" cx="0.82" cy="0.45" r="0.5">
+      <stop offset="0" stop-color="#39FF88" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#39FF88" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="saffron" x1="0" y1="0" x2="1" y2="0.4">
+      <stop offset="0" stop-color="#FF5A00"/>
+      <stop offset="0.55" stop-color="#FF7A10"/>
+      <stop offset="1" stop-color="#FF9A2E"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#000" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <!-- dark card with a saffron glow on the left and a green glow on the right -->
+  <rect x="0" y="0" width="1280" height="430" rx="30" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1280" height="430" rx="30" fill="url(#glowL)"/>
+  <rect x="0" y="0" width="1280" height="430" rx="30" fill="url(#glowR)"/>
+  <rect x="2" y="2" width="1276" height="426" rx="29" fill="none" stroke="#39FF88" stroke-opacity="0.35" stroke-width="2"/>
+
+  <!-- twinkling lights, like diyas and fairy lights -->
+  <g>
+    <circle cx="90" cy="360" r="4" fill="#FFB547"><animate attributeName="opacity" values="0.2;1;0.2" dur="2.6s" repeatCount="indefinite"/></circle>
+    <circle cx="160" cy="70" r="3" fill="#39FF88"><animate attributeName="opacity" values="1;0.2;1" dur="3.1s" repeatCount="indefinite"/></circle>
+    <circle cx="1180" cy="80" r="4" fill="#FFB547"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.2s" repeatCount="indefinite"/></circle>
+    <circle cx="1220" cy="350" r="3" fill="#39FF88"><animate attributeName="opacity" values="1;0.25;1" dur="2.9s" repeatCount="indefinite"/></circle>
+    <circle cx="1090" cy="380" r="2.5" fill="#FF7A10"><animate attributeName="opacity" values="0.2;1;0.2" dur="3.4s" repeatCount="indefinite"/></circle>
+    <circle cx="250" cy="390" r="2.5" fill="#39FF88"><animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite"/></circle>
+    <circle cx="1010" cy="50" r="2.5" fill="#FFFFFF"><animate attributeName="opacity" values="1;0.2;1" dur="2.7s" repeatCount="indefinite"/></circle>
+    <circle cx="60" cy="140" r="2.5" fill="#FFFFFF"><animate attributeName="opacity" values="0.3;0.9;0.3" dur="3.6s" repeatCount="indefinite"/></circle>
+  </g>
+
+  <!-- the logo (same as the app): waving saffron flag + SHRI + TOOLS -->
+  <g transform="translate(190 18)">
+    <path fill="url(#saffron)">
+      <animate attributeName="d" dur="2.4s" repeatCount="indefinite" calcMode="spline"
+        keyTimes="0;0.33;0.66;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+        values="M44 50 C80 40,110 70,150 62 L168 74 C150 80,135 84,128 90 C145 98,165 104,182 118 C150 120,110 112,66 120 Z;
+                M44 50 C75 58,112 52,150 72 L170 84 C152 87,138 90,130 97 C148 105,166 111,180 127 C148 125,108 129,66 120 Z;
+                M44 50 C85 44,105 62,148 58 L166 66 C148 75,134 81,126 88 C144 94,166 98,186 108 C152 116,112 106,66 120 Z;
+                M44 50 C80 40,110 70,150 62 L168 74 C150 80,135 84,128 90 C145 98,165 104,182 118 C150 120,110 112,66 120 Z"/>
+    </path>
+    <path fill="url(#fold)">
+      <animate attributeName="d" dur="2.4s" repeatCount="indefinite" calcMode="spline"
+        keyTimes="0;0.33;0.66;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+        values="M70 52 C82 70,86 95,84 118 L100 117 C104 95,98 68,88 50 Z;
+                M100 57 C110 75,114 98,110 124 L126 125 C130 100,124 74,116 58 Z;
+                M128 56 C136 72,140 92,138 112 L154 112 C156 92,152 72,144 57 Z;
+                M70 52 C82 70,86 95,84 118 L100 117 C104 95,98 68,88 50 Z"/>
+    </path>
+    <line x1="40" y1="42" x2="92" y2="238" stroke="#FF7A10" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="40" cy="40" r="5" fill="#FF9A2E"/>
+    <text x="82" y="200" font-family="'Segoe UI Black','Arial Black','Segoe UI',Arial,sans-serif" font-weight="900"
+          font-size="158" textLength="318" lengthAdjust="spacingAndGlyphs" fill="#FFFFFF">SHRI</text>
+    <!-- a soft green glow behind TOOLS, gently breathing -->
+    <text x="436" y="200" font-family="'Segoe UI Black','Arial Black','Segoe UI',Arial,sans-serif" font-weight="900"
+          font-size="158" textLength="440" lengthAdjust="spacingAndGlyphs" fill="#39FF88" filter="url(#soft)">TOOLS<animate
+          attributeName="opacity" values="0.35;0.8;0.35" dur="3s" repeatCount="indefinite"/></text>
+    <text x="436" y="200" font-family="'Segoe UI Black','Arial Black','Segoe UI',Arial,sans-serif" font-weight="900"
+          font-size="158" textLength="440" lengthAdjust="spacingAndGlyphs" fill="#39FF88">TOOLS</text>
+  </g>
+
+  <!-- tagline -->
+  <text x="640" y="318" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="30" fill="#E8EEF2">
+    Talking cartoons, cinematic episodes and music videos</text>
+  <text x="640" y="356" text-anchor="middle" font-family="'Segoe UI',Arial,sans-serif" font-size="25" fill="#9FB3A8">
+    on an ordinary 4 GB gaming laptop - fully offline, in 12 languages</text>
+
+  <!-- three colored chips -->
+  <g font-family="'Segoe UI',Arial,sans-serif" font-size="19" font-weight="700" text-anchor="middle">
+    <rect x="370" y="378" width="160" height="34" rx="17" fill="#FF7A10" fill-opacity="0.18" stroke="#FF7A10"/>
+    <text x="450" y="401" fill="#FFB067">EPISODES</text>
+    <rect x="550" y="378" width="180" height="34" rx="17" fill="#39FF88" fill-opacity="0.14" stroke="#39FF88"/>
+    <text x="640" y="401" fill="#7DFFB0">MUSIC VIDEOS</text>
+    <rect x="750" y="378" width="160" height="34" rx="17" fill="#4AA8FF" fill-opacity="0.16" stroke="#4AA8FF"/>
+    <text x="830" y="401" fill="#8CC8FF">SHORTS</text>
+  </g>
+</svg>

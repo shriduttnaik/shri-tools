@@ -108,11 +108,15 @@ DEFAULT_SETTINGS = {
     "ollama_url": "http://127.0.0.1:11434",
     "clip_sizes": [[864, 480], [736, 416]],
     "picture_size": [1024, 576],
+    "picture_check": True,        # a vision AI checks every picture (extra / doubled people, wrong action) and
+    "picture_check_tries": 2,     # draws a failed one again up to this many times
+    "vision_model": "qwen2.5vl:7b",  # Ollama vision model for the picture check (a cloud story AI is used if set)
     "qc_rounds": 2,
     "level": 0.08,
     "xfade": 0.3,
     "music_volume": 0.3,
     "short_max_seconds": 58,
+    "shorts_count": 3,  # Shorts per video: the hook Short, the ending, the best middle moment
     "ai_disclosure": "Made with AI: pictures, acting, voices and sounds are AI-generated.",
     "brand_intro": False,     # optional: 2 s waving-flag SHRI TOOLS intro before the final video
     "brand_end": False,       # optional: 3 s end card with the logo and brand_end_text

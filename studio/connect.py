@@ -21,7 +21,7 @@ from aiohttp import web
 
 import store
 
-FILES = {"final": "final.mp4", "short": "short1.mp4", "subtitles": "subtitles.srt",
+FILES = {"final": "final.mp4", "short": "short1.mp4", "short2": "short2.mp4", "short3": "short3.mp4", "subtitles": "subtitles.srt",
          "thumb1": "thumb1.jpg", "thumb2": "thumb2.jpg", "thumb3": "thumb3.jpg"}
 ALL_STEPS = ["sheets", "pictures", "clips", "check", "final", "publish"]
 srv = None  # the server module (set by setup), for its queue helpers

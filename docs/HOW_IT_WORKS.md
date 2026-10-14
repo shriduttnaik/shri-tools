@@ -6,11 +6,11 @@
 |---|---|---|
 | write | the story AI (Ollama, JSON schema) writes title, logline, hook words, plot and N scenes, following the H3 rules below | `studio/writer.py` |
 | sheets | each character gets a full-body and a face picture (FLUX.2 klein, 4 steps); photos of a real person can be references | `produce.make_sheet` |
-| pictures | the first frame of every scene: the picture text with each `@Name` replaced by name + look, and up to 3 character pictures as reference latents | `produce.picture_prompt` |
+| pictures | the first frame of every scene: the picture text with each `@Name` replaced by name + look, and up to 3 character pictures as reference latents. Then the **picture check**: a vision AI counts the people in every picture; a doubled or extra person, a person in an empty shot or a different action -> drawn again with a new seed (2 tries, the best one stays) | `produce.picture_prompt`, `studio/picqc.py` |
 | clips | one MiniMax H3 image-to-video clip per scene (124 frames = 5.2 s at 24 fps, 864x480, 4 steps) with its own voice and sounds | `produce.h3_prompt`, `engine/talk_clip.py` |
-| check | Whisper listens to every clip; failed clips are remade with a new seed (2 rounds by default), every try is kept in `versions\` and the best one wins | `engine/scene_qc.py` |
+| check | Whisper listens to every clip and the vision AI looks at a frame near its end (a person who walked in, a doubled character); failed clips are remade with a new seed (2 rounds by default), every try is kept in `versions\` and the best one wins | `engine/scene_qc.py`, `produce.look_at_clips` |
 | final | the clips are joined with 0.3 s crossfades; each clip keeps its own sound, levelled to the same loudness | `engine/assemble.py` |
-| publish | titles/description/tags (LLM), subtitles from the measured speech windows, 3 thumbnails, the 9:16 Short | `produce.step_publish` |
+| publish | titles/description/tags (LLM), subtitles from the measured speech windows, 3 thumbnails, three 9:16 Shorts (hook + climax, the opening story, the strongest moment) | `produce.step_publish` |
 
 The server (`studio/server.py`) runs one GPU job at a time from `library/queue.json` in a separate worker process.
 Before H3, ComfyUI is restarted so the picture model is completely out of memory; before the LLM, ComfyUI is stopped.
@@ -84,6 +84,25 @@ Each of these came from a broken clip:
 
 A failed clip is remade with a new seed. After the last round the best try is kept (passes first, then fewer
 problems, then better match).
+
+### Pictures and people (the vision check)
+
+Picture models and H3 sometimes add people: a second copy of the toddler, a stranger behind the cast, a person who
+walks into an empty shot. With videos made automatically (n8n, schedules) nobody would see it, so a vision AI looks:
+
+- **Before the videos**, at every picture. It first counts and describes everyone it sees *without* being told who
+  should be there (told the cast list, it tends to repeat the list instead of looking), then says whether the picture
+  shows the described action. More people than the `@Names` in the picture text, a doubled character, or anyone in
+  a picture that says "nobody / empty" -> the picture is drawn again (Settings `picture_check_tries`, default 2).
+  Crowds are allowed when the picture text asks for them (families, villagers, people in the background) and not
+  limited by "only these two people" / "exactly three people and nobody else". Statues, idols and posters do not count.
+- **After the videos**, at a frame 0.6 s before the end of every clip (episodes and music videos): an extra or
+  doubled person fails the clip and the check round makes it again.
+
+The local model is `qwen2.5vl:7b` in Ollama (Settings `vision_model`), about 1 minute per picture on a 4 GB GPU. It
+counts people well but misses subtle action differences (a handshake instead of a wrist grab); with a Claude, OpenAI
+or Gemini key in Settings the cloud model is used instead. Tested on 9 known good/bad pictures: 8 right, no good
+picture failed. Turn it off with Settings `picture_check: false`.
 
 ## Timings on the test laptop (RTX 3050 4 GB, 24 GB RAM)
 

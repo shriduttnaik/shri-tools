@@ -38,6 +38,15 @@ ollama pull gpt-oss:20b
 
 `qwen3.5:9b` also works (faster, a bit simpler stories); pick it in Shri Tools > Settings.
 
+And the vision model that checks every picture and video (about 6 GB):
+
+```
+ollama pull qwen2.5vl:7b
+```
+
+Without it Shri Tools still works, it just does not check the pictures (the log says so). With a Claude, OpenAI or
+Gemini key in Settings, that cloud model checks the pictures instead.
+
 No Ollama, or a slower PC? In Settings > Story AI choose **Claude**, **ChatGPT**, **Gemini** or an
 **OpenAI-compatible** service, paste your API key and press *Test*. Only the writing (stories, lyrics, YouTube texts,
 translations) goes to that service; everything else stays on your laptop. Claude uses the official `anthropic` Python
