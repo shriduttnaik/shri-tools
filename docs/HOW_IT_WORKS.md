@@ -100,6 +100,9 @@ walks into an empty shot. With videos made automatically (n8n, schedules) nobody
   music videos): more people at the end means someone walked into the shot, and the clip is made again. It compares
   the clip with its own start, not with the cast list - a festival crowd that is already in the picture stays in the
   video, and that is fine (an earlier version compared with the cast list and failed 11 good clips of a garba night).
+  When the first count says someone appeared, a stricter second count (only real, living people - not idols, statues,
+  paintings or dolls) must agree before the clip fails: a Devi idol filling the frame at the end of a push-in was
+  once counted as a person.
 
 The local model is `qwen2.5vl:7b` in Ollama (Settings `vision_model`), about 1 minute per picture on a 4 GB GPU. It
 counts people well but misses subtle action differences (a handshake instead of a wrist grab); with a Claude, OpenAI

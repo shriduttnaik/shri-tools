@@ -13,7 +13,7 @@ import automate  # noqa: E402
 from aiohttp import web  # noqa: E402
 
 PORT = 7880
-VERSION = "1.2"
+VERSION = "1.3"
 WEB = os.path.join(HERE, "web")
 CFG = store.CFG
 IMG_EXT = {".png", ".jpg", ".jpeg", ".webp"}

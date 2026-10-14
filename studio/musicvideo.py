@@ -525,7 +525,10 @@ def step_music_publish(prod):
         a = off + max(0.0, min(hook["start"] - 1.0, total - off - 30))
         if abs(a - start) > 8:
             more.append(("chorus", a, hook["text"]))
-        more.append(("ending", max(off, total - 30), p["title"]))
+        end = max(off, total - 30)
+        # a song whose chorus IS its last 30 s would get the same Short twice: the ending only when it is different
+        if all(abs(end - b) > 15 for b in [start] + [m[1] for m in more]):
+            more.append(("ending", end, p["title"]))
     for n, (kind, a, title) in enumerate(more[:max(0, int(prod.st.get("shorts_count", 3)) - 1)], 2):
         png = os.path.join(work, f"title{n}.png")
         im = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
@@ -537,5 +540,10 @@ def step_music_publish(prod):
             shorts.append({"file": f"output/short{n}.mp4", "scenes": [], "seconds": secs, "title": title, "kind": kind})
             prod.log(f"Short {n} ({kind}): {secs:.1f} s from {a:.1f} s")
     pub["shorts"] = shorts
+    made = {s["file"] for s in shorts}
+    for n in range(2, 6):  # a Short from an earlier run that this run did not make again
+        old = prod.path("output", f"short{n}.mp4")
+        if f"output/short{n}.mp4" not in made and os.path.exists(old):
+            os.remove(old)
     pub["made"] = store.now()
     store.write_json(store.pfile(prod.pid, "publish.json"), pub)

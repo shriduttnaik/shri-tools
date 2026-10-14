@@ -615,6 +615,8 @@ class Producer:
             return
         res = {sid: {"ok": True, "problems": [], "heard": "", "rms": 1.0} for sid in ids}
         self.look_at_clips(res)
+        for sid, v in res.items():  # the storyboard's "checked OK" count
+            store.set_result(self.pid, sid, qc={"ok": v["ok"], "problems": v["problems"]})
         bad = sorted(s for s, v in res.items() if not v["ok"])
         self.log(f"looked at {len(ids)} videos: {len(ids) - len(bad)} OK" + (f", remake {', '.join(bad)}" if bad else ""))
         if not bad:
@@ -632,6 +634,7 @@ class Producer:
         again = {sid: {"ok": True, "problems": [], "heard": "", "rms": 1.0} for sid in bad}
         self.look_at_clips(again)
         for sid in bad:
+            store.set_result(self.pid, sid, qc={"ok": again[sid]["ok"], "problems": again[sid]["problems"]})
             if again[sid]["ok"]:
                 self.log(f"  {sid}: new clip OK")
             else:
@@ -1006,6 +1009,11 @@ while(s>24&&(t.getBoundingClientRect().height>{h}||t.scrollWidth>{w})){{s-=4;b.s
                            "kind": kind})
             self.log(f"Short {n} ({kind}): {len(sids)} scenes, {secs} s")
         pub["shorts"] = shorts
+        made = {s["file"] for s in shorts}
+        for n in range(2, 6):  # a Short from an earlier run that this run did not make again
+            old = self.path("output", f"short{n}.mp4")
+            if f"output/short{n}.mp4" not in made and os.path.exists(old):
+                os.remove(old)
         pub["made"] = store.now()
         store.write_json(store.pfile(self.pid, "publish.json"), pub)
 

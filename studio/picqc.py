@@ -133,8 +133,20 @@ COUNT_SCHEMA = {"type": "object", "properties": {"people_count": {"type": "integ
                 "required": ["people_count", "people"]}
 
 
+LIVING = ("Look very carefully. Count only REAL, LIVING people (adults, children, babies, or animated characters who are "
+          "alive in the scene). Do NOT count statues, idols, deity figures, temple murtis, paintings, posters, dolls, "
+          "carvings, masks or reflections - even when they look like a person. Answer in JSON with people_count and "
+          "people (one short line per living person).")
+
+
 def count_people(path, st=None):
     return int(ask_vision(path, COUNT, st=st, schema=COUNT_SCHEMA).get("people_count") or 0)
+
+
+def count_living(path, st=None):
+    """A stricter second count, asked only when the first one says someone appeared: a Devi idol filling the frame at
+    the end of a push-in was counted as a person once."""
+    return int(ask_vision(path, LIVING, st=st, schema=COUNT_SCHEMA).get("people_count") or 0)
 
 
 def check_clip(first, last, scene, chars, st=None):
@@ -149,6 +161,8 @@ def check_clip(first, last, scene, chars, st=None):
     if n0 > len(want) + 1:
         return {"ok": True, "reasons": [], "start": n0, "end": None}
     n1 = count_people(last, st)
+    if n1 > max(n0, len(want)):
+        n1 = min(n1, count_living(last, st))  # both counts must say so (idols, statues, paintings)
     if n1 > max(n0, len(want)):
         return {"ok": False, "reasons": [f"a person appeared in the video ({n0} at the start, {n1} at the end)"],
                 "start": n0, "end": n1}
