@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/banner.svg" width="100%" alt="SHRI TOOLS - talking cartoons, cinematic episodes and music videos on a 4 GB laptop">
+  <img src="docs/media/banner.svg" width="100%" alt="SHRI TOOLS by SHRI LABS - talking cartoons, cinematic episodes and music videos on a 4 GB laptop">
 </p>
 
 <p align="center">
@@ -9,6 +9,8 @@
   <img src="https://img.shields.io/badge/languages-12-FF7A10?style=for-the-badge" alt="12 languages">
   <img src="https://img.shields.io/badge/license-MIT-4AA8FF?style=for-the-badge" alt="MIT license">
 </p>
+
+<p align="center"><b>Shri Tools</b> is an app by <b>Shri Labs</b>.</p>
 
 <p align="center"><b>Make talking AI cartoon and cinematic episodes - and music videos - on an ordinary gaming laptop (4 GB GPU), fully offline.</b></p>
 
@@ -237,4 +239,4 @@ their own licenses; read them before you publish or monetize videos:
 
 If Shri Tools helps you make something, a ⭐ star helps other people find it.
 
-<p align="center"><sub>Made with ❤️ in India, on a 4 GB laptop.</sub></p>
+<p align="center"><sub><b>Shri Tools</b> by <b>Shri Labs</b> · Made with ❤️ in India, on a 4 GB laptop.</sub></p>

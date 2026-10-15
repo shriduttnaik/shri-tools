@@ -40,6 +40,9 @@ a { color: var(--green); text-decoration: none; }
 .logo-mark svg { width: 16px; height: 16px; fill: var(--green); stroke: none; filter: drop-shadow(0 0 4px rgba(57,255,136,.9)); }
 .logo-text { font-size: 19px; font-weight: 800; letter-spacing: 2px; }
 .logo-text b { color: var(--green); text-shadow: var(--glow-text); font-weight: 800; }
+.logo { flex-direction: column; align-items: flex-start; }
+.logo-by { font-size: 13px; letter-spacing: 3px; color: var(--muted, #9aa); margin: 4px 0 0 4px; }
+.logo-by b { color: #FF9933; font-weight: 800; }
 .logo-img { width: 232px; height: auto; display: block; filter: drop-shadow(0 0 6px rgba(57,255,136,.25)); }
 .side .new-btn { margin: 4px 14px 14px; }
 .nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
