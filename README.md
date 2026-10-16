@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/banner.svg" width="100%" alt="SHRI TOOLS by SHRI LABS - talking cartoons, cinematic episodes and music videos on a 4 GB laptop">
+  <img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/banner.svg" width="100%" alt="SHRI TOOLS by SHRI LABS - talking cartoons, cinematic episodes and music videos on a 4 GB laptop">
 </p>
 
 <p align="center">
@@ -20,14 +20,14 @@ Shorts, thumbnails and YouTube texts. No account, no upload, no API costs.
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/media/hook.gif" alt="Tuntun: Eww! Smelly man!"><br><sub>🎬 <b>Thank You, Ramu Kaka</b> - the hook</sub></td>
-    <td width="33%"><img src="docs/media/song_sing.gif" alt="Tuntun sings into a carrot microphone"><br><sub>🎵 <b>Thank You Bolo!</b> - Hindi song, lip-synced</sub></td>
-    <td width="33%"><img src="docs/media/navratri_aarti.gif" alt="Navratri aarti"><br><sub>🪔 <b>Jai Mata Di - Garba Night</b></sub></td>
+    <td width="33%"><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/hook.gif" alt="Tuntun: Eww! Smelly man!"><br><sub>🎬 <b>Thank You, Ramu Kaka</b> - the hook</sub></td>
+    <td width="33%"><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/song_sing.gif" alt="Tuntun sings into a carrot microphone"><br><sub>🎵 <b>Thank You Bolo!</b> - Hindi song, lip-synced</sub></td>
+    <td width="33%"><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/navratri_aarti.gif" alt="Navratri aarti"><br><sub>🪔 <b>Jai Mata Di - Garba Night</b></sub></td>
   </tr>
   <tr>
-    <td><img src="docs/media/sweeping.gif" alt="Ramu Kaka sweeping the street"><br><sub>🎬 Ramu Kaka at work</sub></td>
-    <td><img src="docs/media/postman_whistle.gif" alt="Tuntun blows grandma's whistle"><br><sub>🎬 <b>Thank You, Postman Uncle!</b></sub></td>
-    <td><img src="docs/media/respect.gif" alt="Tuntun: Respect everyone!"><br><sub>🎬 "Respect everyone!"</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/sweeping.gif" alt="Ramu Kaka sweeping the street"><br><sub>🎬 Ramu Kaka at work</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/postman_whistle.gif" alt="Tuntun blows grandma's whistle"><br><sub>🎬 <b>Thank You, Postman Uncle!</b></sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/respect.gif" alt="Tuntun: Respect everyone!"><br><sub>🎬 "Respect everyone!"</sub></td>
   </tr>
 </table>
 
@@ -71,19 +71,19 @@ you, a Navratri garba night and a Diwali song:
 
 <table>
   <tr>
-    <td><img src="docs/media/show_diwali_diya.jpg" alt="Diwali: Tuntun with a diya"><br><sub>🪔 Sabke Saath Diwali!</sub></td>
-    <td><img src="docs/media/show_navratri_aarti.jpg" alt="Navratri: aarti"><br><sub>🪔 Garba Night - aarti</sub></td>
-    <td><img src="docs/media/show_song_carrot.jpg" alt="Thank You Bolo: carrot microphone"><br><sub>🎵 Thank You Bolo!</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_diwali_diya.jpg" alt="Diwali: Tuntun with a diya"><br><sub>🪔 Sabke Saath Diwali!</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_navratri_aarti.jpg" alt="Navratri: aarti"><br><sub>🪔 Garba Night - aarti</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_song_carrot.jpg" alt="Thank You Bolo: carrot microphone"><br><sub>🎵 Thank You Bolo!</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/media/show_postman_water.jpg" alt="Thank You, Postman Uncle: a glass of cold water"><br><sub>🎬 Postman Uncle - cold water</sub></td>
-    <td><img src="docs/media/show_navratri_dandiya.jpg" alt="Navratri: dandiya with Shri Mama"><br><sub>🪔 Garba Night - dandiya</sub></td>
-    <td><img src="docs/media/show_diwali_laddoo.jpg" alt="Diwali: Tuntun eats a laddoo"><br><sub>🪔 Diwali laddoo</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_postman_water.jpg" alt="Thank You, Postman Uncle: a glass of cold water"><br><sub>🎬 Postman Uncle - cold water</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_navratri_dandiya.jpg" alt="Navratri: dandiya with Shri Mama"><br><sub>🪔 Garba Night - dandiya</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_diwali_laddoo.jpg" alt="Diwali: Tuntun eats a laddoo"><br><sub>🪔 Diwali laddoo</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/media/show_postman_tears.jpg" alt="Postman Raghu: happy tears"><br><sub>🎬 Postman Raghu's happy tears</sub></td>
-    <td><img src="docs/media/show_song_namaste.jpg" alt="Thank You Bolo: namaste"><br><sub>🎵 Namaste, everyone</sub></td>
-    <td><img src="docs/media/show_diwali_dance.jpg" alt="Diwali: dancing hand in hand"><br><sub>🪔 Dancing in the lights</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_postman_tears.jpg" alt="Postman Raghu: happy tears"><br><sub>🎬 Postman Raghu's happy tears</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_song_namaste.jpg" alt="Thank You Bolo: namaste"><br><sub>🎵 Namaste, everyone</sub></td>
+    <td><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/show_diwali_dance.jpg" alt="Diwali: dancing hand in hand"><br><sub>🪔 Dancing in the lights</sub></td>
   </tr>
 </table>
 
@@ -93,7 +93,7 @@ AI pictures and videos make mistakes: a second copy of a character, a stranger i
 mumbled line. Shri Tools looks at everything it makes, so you don't have to - even when videos are made
 automatically at night:
 
-<p align="center"><img src="docs/media/autocheck.jpg" width="100%" alt="The vision check counts 3 people where 2 belong: drawn again"></p>
+<p align="center"><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/autocheck.jpg" width="100%" alt="The vision check counts 3 people where 2 belong: drawn again"></p>
 
 | Check | What it catches | Then |
 |---|---|---|
@@ -126,7 +126,7 @@ flowchart TB
 An episode of about 1.5 minutes takes roughly **4 hours** on a 4 GB laptop - start it before bed, watch it in the
 morning.
 
-<p align="center"><img src="docs/media/app_storyboard.png" width="100%" alt="Shri Tools storyboard screen"></p>
+<p align="center"><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/app_storyboard.png" width="100%" alt="Shri Tools storyboard screen"></p>
 
 ## 💡 Good to know
 
@@ -194,7 +194,7 @@ and the video model, which is what makes H3 fit next to everything else on this 
 - **One GPU job at a time** in a queue that survives restarts and power cuts.
 - **Optional logo in videos**: a waving-flag intro, a corner logo and an end card (off by default).
 
-<p align="center"><img src="docs/media/app_connect.png" width="100%" alt="Shri Tools Connect screen for n8n"></p>
+<p align="center"><img src="https://cdn.jsdelivr.net/gh/shriduttnaik/shri-tools@main/docs/media/app_connect.png" width="100%" alt="Shri Tools Connect screen for n8n"></p>
 
 ### What is in this repository
 
